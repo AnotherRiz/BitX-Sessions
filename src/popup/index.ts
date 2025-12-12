@@ -15,6 +15,48 @@ class PopupController {
   private currentSiteElement: HTMLElement;
   private saveBtn: HTMLButtonElement;
   private newSessionBtn: HTMLButtonElement;
+  private handleCancelRename(): void {
+    this.popupService.setState({ currentRenameSessionId: "" });
+    this.modalManager.hideRenameModal();
+  }
+
+  private findSessionByNameInCurrentDomain(name: string, excludeId?: string) {
+    const state = this.popupService.getState();
+    const target = name.trim().toLowerCase();
+
+    return state.sessions.find(
+      (s) => s.domain === state.currentDomain && s.id !== excludeId && s.name.trim().toLowerCase() === target
+    );
+  }
+  private async handleOverwriteRename(): Promise<void> {
+    try {
+      const newName = this.modalManager.getRenameModalInput();
+      const { currentRenameSessionId } = this.popupService.getState();
+
+      if (!newName || !currentRenameSessionId) {
+        this.modalManager.hideRenameModal();
+        return;
+      }
+
+      await this.loadingManager.withLoading(async () => {
+        const conflict = this.findSessionByNameInCurrentDomain(newName, currentRenameSessionId);
+
+        if (conflict) {
+          await this.popupService.deleteSession(conflict.id);
+        }
+
+        await this.popupService.deleteSession(currentRenameSessionId);
+
+        await this.popupService.saveCurrentSession(newName);
+      });
+
+      this.popupService.setState({ currentRenameSessionId: "" });
+      this.modalManager.hideRenameModal();
+      this.renderSessionsList();
+    } catch (error) {
+      this.showError(handleError(error, "overwrite session"));
+    }
+  }
 
   constructor() {
     // Get DOM elements
@@ -49,8 +91,10 @@ class PopupController {
   private setupEventListeners(): void {
     this.saveBtn.addEventListener("click", () => this.handleSaveClick());
     this.newSessionBtn.addEventListener("click", () => this.handleNewSessionClick());
+    getElementByIdSafe("overwriteRename").addEventListener("click", () => this.handleOverwriteRename());
+    getElementByIdSafe("cancelRename").addEventListener("click", () => this.handleCancelRename());
+    getElementByIdSafe("closeRenameModal").addEventListener("click", () => this.handleCancelRename());
 
-    // Modal event listeners
     getElementByIdSafe("confirmSave").addEventListener("click", () => this.handleConfirmSave());
     getElementByIdSafe("confirmRename").addEventListener("click", () => this.handleConfirmRename());
     getElementByIdSafe("confirmDelete").addEventListener("click", () => this.handleConfirmDelete());
@@ -224,7 +268,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!menuBtn || !dropdownMenu) return;
 
-  // Toggle dropdown
   menuBtn.addEventListener("click", (e: MouseEvent) => {
     e.stopPropagation();
 
@@ -232,7 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
     dropdownMenu.style.display = isOpen ? "none" : "block";
   });
 
-  // Close when clicking outside
   document.addEventListener("click", (e: MouseEvent) => {
     const target = e.target as HTMLElement;
 
@@ -277,9 +319,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// === ADDED FOR DROPDOWN ACTIONS ===
-
-// Export saved sessions → download JSON file
 async function exportSessions() {
   const { sessions } = await chrome.storage.local.get("sessions");
 
@@ -289,7 +328,7 @@ async function exportSessions() {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "sessions-backup.json";
+  a.download = "BitXSessions-backup.json";
   a.click();
 
   URL.revokeObjectURL(url);
@@ -347,7 +386,6 @@ confirmImport?.addEventListener("click", async () => {
 
     closeImport();
 
-    // Reload popup UI
     location.reload();
   } catch (err) {
     console.error(err);
@@ -356,9 +394,6 @@ confirmImport?.addEventListener("click", async () => {
   }
 });
 
-// =======================
-// Modal: Clear All Sessions
-// =======================
 const clearAllModal = document.getElementById("clearAllModal") as HTMLElement | null;
 const closeClearAllModal = document.getElementById("closeClearAllModal") as HTMLElement | null;
 const cancelClearAll = document.getElementById("cancelClearAll") as HTMLElement | null;
@@ -381,9 +416,6 @@ confirmClearAll?.addEventListener("click", async () => {
   location.reload();
 });
 
-// =======================
-// HELP MODAL
-// =======================
 const helpModal = document.getElementById("helpModal") as HTMLElement | null;
 const closeHelpModal = document.getElementById("closeHelpModal");
 const closeHelpBtn = document.getElementById("closeHelpBtn");
@@ -399,9 +431,6 @@ function closeHelp() {
 closeHelpModal?.addEventListener("click", closeHelp);
 closeHelpBtn?.addEventListener("click", closeHelp);
 
-// =======================
-// ABOUT MODAL
-// =======================
 const aboutModal = document.getElementById("aboutModal") as HTMLElement | null;
 const closeAboutModal = document.getElementById("closeAboutModal");
 const closeAboutBtn = document.getElementById("closeAboutBtn");

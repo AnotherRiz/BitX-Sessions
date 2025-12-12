@@ -77,8 +77,11 @@
           <label for="newSessionName">New Name:</label>
           <input type="text" id="newSessionName" placeholder="Enter new name" />
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer rename-footer">
+          <button id="overwriteRename" class="btn btn-danger">Overwrite</button>
+
           <button id="cancelRename" class="btn btn-secondary">Cancel</button>
+
           <button id="confirmRename" class="btn btn-primary">Rename</button>
         </div>
       </div>
@@ -133,7 +136,6 @@
       </div>
     </div>
 
-    <!-- IMPORT SESSIONS MODAL -->
     <div id="importModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -159,11 +161,10 @@
       </div>
     </div>
 
-    <!-- HELP MODAL -->
     <div id="helpModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>How to Use Session Switcher</h3>
+          <h3>How to Use BitX Session</h3>
           <button id="closeHelpModal" class="close-btn">&times;</button>
         </div>
 
@@ -182,7 +183,6 @@
       </div>
     </div>
 
-    <!-- ABOUT MODAL -->
     <div id="aboutModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">

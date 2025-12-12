@@ -1,6 +1,6 @@
-import { $ } from "bun";
-import path from "path";
 import { readdir } from "fs/promises";
+import path from "path";
+import { $ } from "bun";
 
 const rootDir = path.resolve(import.meta.dir, "..");
 const popupSrc = path.join(rootDir, "src", "popup");
@@ -11,7 +11,7 @@ const popupDist = path.join(distDir, "popup");
 
 const target = Bun.argv[2];
 if (!["firefox", "chrome"].includes(target)) {
-  console.error("❌ Please specify a target: 'firefox' or 'chrome'");
+  console.error("Please specify a target: 'firefox' or 'chrome'");
   process.exit(1);
 }
 
@@ -50,8 +50,8 @@ for (const file of popupFiles) {
 try {
   await $`cp -R ${assetsDir} ${distDir}/`;
 } catch {
-  console.log("⚠️ No icons directory found");
+  console.log("No icons directory found");
 }
 
-console.log("✅ Build complete! Extension files are in ./dist/");
-console.log("👉 To install: Load ./dist/ as unpacked extension in browser");
+console.log("Build complete! Extension files are in ./dist/");
+console.log("To install: Load ./dist/ as unpacked extension in browser");
