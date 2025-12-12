@@ -29,8 +29,8 @@
 
           <!-- DROPDOWN -->
           <div class="dropdown-menu" id="dropdownMenu">
-            <div class="dropdown-item" data-action="export">Export Sessions</div>
-            <div class="dropdown-item" data-action="import">Import Sessions</div>
+            <div class="dropdown-item" data-action="export">Export/Import Sessions</div>
+            <!-- <div class="dropdown-item" data-action="import">Import Sessions</div> -->
             <div class="dropdown-item" data-action="clear">Clear All Sessions</div>
             <div class="dropdown-divider"></div>
             <div class="dropdown-item" data-action="help">Help</div>
@@ -136,26 +136,62 @@
       </div>
     </div>
 
-    <div id="importModal" class="modal">
+    <div id="transferModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Import Sessions</h3>
-          <button id="closeImportModal" class="close-btn">&times;</button>
+          <h3 id="transferModalTitle">Sessions</h3>
+          <button id="closeTransferModal" class="close-btn">&times;</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="modal-tabs">
+          <button id="transferTabExport" class="modal-tab active" data-tab="export">Export</button>
+          <button id="transferTabImport" class="modal-tab" data-tab="import">Import</button>
         </div>
 
         <div class="modal-body">
-          <p>Select your <strong>my-sessions.json</strong> file.</p>
-          <p>This action will <strong>replace your current session</strong></p>
+          <!-- EXPORT PANEL -->
+          <div class="transfer-panel" data-panel="export">
+            <div class="export-options">
+              <label class="export-card">
+                <input type="radio" name="exportScope" value="current" checked />
+                <div class="export-card-content">
+                  <div class="export-card-title">Export current site</div>
+                </div>
+              </label>
 
-          <input type="file" id="importFileInput" accept="application/json" style="margin-top: 12px" />
+              <label class="export-card">
+                <input type="radio" name="exportScope" value="all" />
+                <div class="export-card-content">
+                  <div class="export-card-title">Export all sessions</div>
+                </div>
+              </label>
+            </div>
 
-          <p id="importFileInfo" style="margin-top: 10px; font-size: 13px; color: #ccc"></p>
+            <p style="opacity: 0.8; font-size: 13px; margin-top: 10px">File will be saved as JSON.</p>
+            <p id="exportError" style="color: #ff6b6b; font-size: 13px; display: none; margin-top: 10px"></p>
+          </div>
 
-          <p id="importError" style="color: #ff6b6b; font-size: 13px; display: none"></p>
+          <!-- IMPORT PANEL (pakai UI lama kamu) -->
+          <div class="transfer-panel" data-panel="import" style="display: none">
+            <p>Select your <strong>BitX-Sessions.json</strong> file.</p>
+            <p>This action will <strong>replace your current session</strong></p>
+
+            <input type="file" id="importFileInput" accept="application/json" style="margin-top: 12px" />
+
+            <p id="importFileInfo" style="margin-top: 10px; font-size: 13px; color: #ccc"></p>
+            <p id="importError" style="color: #ff6b6b; font-size: 13px; display: none"></p>
+          </div>
         </div>
 
-        <div class="modal-footer">
-          <button id="cancelImport" class="btn btn-secondary">Cancel</button>
+        <!-- Footer (switch sesuai tab) -->
+        <div class="modal-footer transfer-footer" data-footer="export">
+          <button id="cancelTransfer" class="btn btn-secondary">Cancel</button>
+          <button id="confirmExport" class="btn btn-primary">Export</button>
+        </div>
+
+        <div class="modal-footer transfer-footer" data-footer="import" style="display: none">
+          <button id="cancelTransfer2" class="btn btn-secondary">Cancel</button>
           <button id="confirmImport" class="btn btn-primary" disabled>Import</button>
         </div>
       </div>

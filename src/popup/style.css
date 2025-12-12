@@ -131,7 +131,7 @@ body {
   background: #2a2a3a;
   border: 1px solid #3a3a4a;
   border-radius: 6px;
-  width: 140px;
+  width: max-content;
   padding: 6px 0;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
   z-index: 200;
@@ -448,6 +448,58 @@ body {
   color: #eceff4;
 }
 
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* Card */
+.export-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* Hide native radio (still accessible) */
+.export-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  accent-color: #6aa9ff;
+}
+
+.export-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.export-card:has(input:checked) {
+  border-color: rgba(106, 169, 255, 0.6);
+  background: rgba(106, 169, 255, 0.15);
+}
+
+.export-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.export-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
 .close-btn {
   background: none;
   border: none;
@@ -467,7 +519,7 @@ body {
 }
 
 .modal-body {
-  padding: 16px;
+  padding: 8px;
 }
 
 .modal-body label {
@@ -499,6 +551,35 @@ body {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 18px 10px;
+  margin-top: 14px;
+}
+
+.modal-tab {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-tab.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.transfer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* =========================

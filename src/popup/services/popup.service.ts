@@ -9,6 +9,9 @@ import { validateSessionName } from "@shared/utils/validation";
 import { ChromeApiService } from "./chromeApi.service";
 
 export class PopupService {
+  static getState(): { currentDomain: any } {
+    throw new Error("Method not implemented.");
+  }
   private chromeApi = new ChromeApiService();
   private state: PopupState = {
     currentDomain: "",
@@ -71,6 +74,57 @@ export class PopupService {
       return newSession;
     } catch (error) {
       throw new ExtensionError(handleError(error, "PopupService.saveCurrentSession"));
+    }
+  }
+
+  /**
+   * Overwrite (update in-place) an existing saved session with the CURRENT tab session.
+   * - Keeps the same id + order (so list order doesn't change)
+   * - Optionally updates the session name
+   */
+  async overwriteSessionWithCurrent(sessionId: string, name?: string): Promise<void> {
+    try {
+      const session = this.state.sessions.find((s) => s.id === sessionId);
+      if (!session) {
+        throw new ExtensionError("Session not found");
+      }
+
+      // Safety: only allow overwriting sessions from the current domain (since we read the current tab session).
+      if (session.domain !== this.state.currentDomain) {
+        throw new ExtensionError("Cannot overwrite a session from a different domain");
+      }
+
+      const validatedName = name !== undefined ? validateSessionName(name) : session.name;
+
+      const response = await this.chromeApi.sendMessage<StoredSession | null>({
+        action: MESSAGE_ACTIONS.GET_CURRENT_SESSION,
+        domain: this.state.currentDomain,
+        tabId: this.state.currentTab.id!,
+      });
+
+      if (!response.success) {
+        throw new ExtensionError(response.error || "Failed to get current session");
+      }
+
+      const storedSession = response.data ?? storedSessionDefaultValue;
+
+      // Preserve identity + ordering metadata.
+      const preserved = {
+        id: session.id,
+        order: session.order,
+        createdAt: session.createdAt,
+        domain: session.domain,
+      };
+
+      Object.assign(session, storedSession, preserved, {
+        name: validatedName,
+        lastUsed: Date.now(),
+      });
+
+      this.state.activeSessions[this.state.currentDomain] = session.id;
+      await this.saveStorageData();
+    } catch (error) {
+      throw new ExtensionError(handleError(error, "PopupService.overwriteSessionWithCurrent"));
     }
   }
 

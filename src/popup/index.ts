@@ -39,15 +39,14 @@ class PopupController {
       }
 
       await this.loadingManager.withLoading(async () => {
+        // If another session already has this name, delete it (so we can keep the current sessionId + order).
         const conflict = this.findSessionByNameInCurrentDomain(newName, currentRenameSessionId);
-
         if (conflict) {
           await this.popupService.deleteSession(conflict.id);
         }
 
-        await this.popupService.deleteSession(currentRenameSessionId);
-
-        await this.popupService.saveCurrentSession(newName);
+        // ✅ overwrite in-place (keeps id + order)
+        await this.popupService.overwriteSessionWithCurrent(currentRenameSessionId, newName);
       });
 
       this.popupService.setState({ currentRenameSessionId: "" });
@@ -219,13 +218,15 @@ class PopupController {
   }
 }
 
+let popupService: PopupService | null = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Session Switcher popup loaded");
   const controller = new PopupController();
   await controller.initialize();
 
-  const service = controller.getServiceInstance();
-  const state = service.getState();
+  popupService = controller.getServiceInstance();
+  const state = popupService.getState();
 
   let currentDomain = state.currentDomain;
 
@@ -297,11 +298,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     switch (action) {
       case "export":
-        exportSessions();
+        openTransferModal("export");
         break;
 
       case "import":
-        openImportModal();
+        openTransferModal("import");
         break;
 
       case "clear":
@@ -319,48 +320,126 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-async function exportSessions() {
-  const { sessions } = await chrome.storage.local.get("sessions");
+type TransferTab = "export" | "import";
 
-  const json = JSON.stringify(sessions ?? {}, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "BitXSessions-backup.json";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-const importModal = document.getElementById("importModal") as HTMLElement | null;
+const transferModal = document.getElementById("transferModal") as HTMLElement | null;
+const closeTransferModal = document.getElementById("closeTransferModal") as HTMLElement | null;
+const transferTabExport = document.getElementById("transferTabExport") as HTMLButtonElement | null;
+const transferTabImport = document.getElementById("transferTabImport") as HTMLButtonElement | null;
+const transferPanels = Array.from(document.querySelectorAll<HTMLElement>(".transfer-panel"));
+const transferFooters = Array.from(document.querySelectorAll<HTMLElement>(".transfer-footer"));
+const cancelTransfer = document.getElementById("cancelTransfer") as HTMLElement | null;
+const cancelTransfer2 = document.getElementById("cancelTransfer2") as HTMLElement | null;
+const confirmExport = document.getElementById("confirmExport") as HTMLButtonElement | null;
 const importFileInput = document.getElementById("importFileInput") as HTMLInputElement | null;
 const importFileInfo = document.getElementById("importFileInfo") as HTMLElement | null;
 const importError = document.getElementById("importError") as HTMLElement | null;
-const closeImportModal = document.getElementById("closeImportModal") as HTMLElement | null;
-const cancelImport = document.getElementById("cancelImport") as HTMLElement | null;
 const confirmImport = document.getElementById("confirmImport") as HTMLButtonElement | null;
 
 let importFile: File | null = null;
 
-export function openImportModal() {
-  importModal?.classList.add("show");
+const exportError = document.getElementById("exportError") as HTMLElement | null;
+
+async function exportSessions(scope: "current" | "all") {
+  if (!popupService) return;
+
+  if (exportError) exportError.style.display = "none";
+
+  const { sessions } = await chrome.storage.local.get("sessions");
+
+  const allSessions = Array.isArray(sessions) ? sessions : [];
+
+  let exportData = allSessions;
+
+  if (scope === "current") {
+    const { currentDomain } = popupService.getState();
+
+    exportData = allSessions.filter((session: any) => session.domain === currentDomain);
+  }
+
+  if (exportData.length === 0) {
+    if (exportError) {
+      exportError.textContent = "No sessions found for current site.";
+      exportError.style.display = "block";
+    }
+    return;
+  }
+
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  function sanitizeFileName(name: string): string {
+    return name
+      .replace(/^https?:\/\//, "")
+      .replace(/[\/\\?%*:|"<>]/g, "-")
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+  }
+
+  const a = document.createElement("a");
+  a.href = url;
+
+  if (scope === "all") {
+    a.download = "BitXSessions-AllSessions.json";
+  } else {
+    const { currentDomain } = popupService.getState();
+    const safeDomain = sanitizeFileName(currentDomain || "unknown-site");
+    a.download = `BitXSessions-${safeDomain}.json`;
+  }
+
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-function closeImport() {
-  importModal?.classList.remove("show");
-  importFile = null;
+confirmExport?.addEventListener("click", async () => {
+  const scope = getExportScope();
+  await exportSessions(scope);
+});
 
+function setActiveTransferTab(tab: TransferTab) {
+  if (exportError) exportError.style.display = "none";
+  transferTabExport?.classList.toggle("active", tab === "export");
+  transferTabImport?.classList.toggle("active", tab === "import");
+
+  transferPanels.forEach((el) => {
+    el.style.display = el.dataset.panel === tab ? "block" : "none";
+  });
+
+  // footers
+  transferFooters.forEach((el) => {
+    el.style.display = el.dataset.footer === tab ? "flex" : "none";
+  });
+}
+
+export function openTransferModal(tab: TransferTab) {
+  transferModal?.classList.add("show");
+  if (exportError) exportError.style.display = "none";
+  setActiveTransferTab(tab);
+}
+
+function closeTransfer() {
+  transferModal?.classList.remove("show");
+
+  importFile = null;
   if (importFileInfo) importFileInfo.textContent = "";
   if (importError) importError.style.display = "none";
   if (confirmImport) confirmImport.disabled = true;
-
-  importFileInput!.value = "";
+  if (importFileInput) importFileInput.value = "";
 }
 
-closeImportModal?.addEventListener("click", closeImport);
-cancelImport?.addEventListener("click", closeImport);
+function getExportScope(): "current" | "all" {
+  const checked = document.querySelector<HTMLInputElement>('input[name="exportScope"]:checked');
+
+  return checked?.value === "all" ? "all" : "current";
+}
+
+closeTransferModal?.addEventListener("click", closeTransfer);
+cancelTransfer?.addEventListener("click", closeTransfer);
+cancelTransfer2?.addEventListener("click", closeTransfer);
+
+transferTabExport?.addEventListener("click", () => setActiveTransferTab("export"));
+transferTabImport?.addEventListener("click", () => setActiveTransferTab("import"));
 
 importFileInput?.addEventListener("change", () => {
   importFile = importFileInput.files?.[0] ?? null;
@@ -375,22 +454,44 @@ importFileInput?.addEventListener("change", () => {
   confirmImport!.disabled = false;
 });
 
+async function mergeSessions(importedSessions: any[]) {
+  const { sessions } = await chrome.storage.local.get("sessions");
+  const existing: any[] = Array.isArray(sessions) ? sessions : [];
+
+  if (importedSessions.length === 0) return;
+
+  const importedDomains = new Set(importedSessions.map((s) => s.domain).filter(Boolean));
+
+  const keptSessions = existing.filter((s) => !importedDomains.has(s.domain));
+
+  await chrome.storage.local.set({
+    sessions: [...keptSessions, ...importedSessions],
+  });
+}
+
 confirmImport?.addEventListener("click", async () => {
   if (!importFile) return;
+
+  if (importError) importError.style.display = "none";
 
   try {
     const text = await importFile.text();
     const data = JSON.parse(text);
 
-    await chrome.storage.local.set({ sessions: data });
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid import format");
+    }
 
-    closeImport();
+    await mergeSessions(data);
 
+    closeTransfer();
     location.reload();
   } catch (err) {
-    console.error(err);
-    importError!.textContent = "Invalid JSON file.";
-    importError!.style.display = "block";
+    console.error("Import failed:", err);
+    if (importError) {
+      importError.textContent = "Invalid or unsupported session file.";
+      importError.style.display = "block";
+    }
   }
 });
 
