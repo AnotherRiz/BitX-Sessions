@@ -217,3 +217,202 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("beforeunload", cleanup);
   window.addEventListener("unload", cleanup);
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const menuBtn = document.getElementById("menuBtn") as HTMLElement | null;
+  const dropdownMenu = document.getElementById("dropdownMenu") as HTMLElement | null;
+
+  if (!menuBtn || !dropdownMenu) return;
+
+  // Toggle dropdown
+  menuBtn.addEventListener("click", (e: MouseEvent) => {
+    e.stopPropagation();
+
+    const isOpen = dropdownMenu.style.display === "block";
+    dropdownMenu.style.display = isOpen ? "none" : "block";
+  });
+
+  // Close when clicking outside
+  document.addEventListener("click", (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+
+    if (dropdownMenu.style.display === "block" && !dropdownMenu.contains(target) && !menuBtn.contains(target)) {
+      dropdownMenu.style.display = "none";
+    }
+  });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dropdown = document.getElementById("dropdownMenu");
+
+  if (!dropdown) return;
+
+  dropdown.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (!target.dataset.action) return;
+
+    const action = target.dataset.action;
+
+    switch (action) {
+      case "export":
+        exportSessions();
+        break;
+
+      case "import":
+        openImportModal();
+        break;
+
+      case "clear":
+        openClearAllModal();
+        break;
+
+      case "help":
+        openHelpModal();
+        break;
+
+      case "about":
+        openAboutModal();
+        break;
+    }
+  });
+});
+
+// === ADDED FOR DROPDOWN ACTIONS ===
+
+// Export saved sessions → download JSON file
+async function exportSessions() {
+  const { sessions } = await chrome.storage.local.get("sessions");
+
+  const json = JSON.stringify(sessions ?? {}, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "sessions-backup.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+const importModal = document.getElementById("importModal") as HTMLElement | null;
+const importFileInput = document.getElementById("importFileInput") as HTMLInputElement | null;
+const importFileInfo = document.getElementById("importFileInfo") as HTMLElement | null;
+const importError = document.getElementById("importError") as HTMLElement | null;
+const closeImportModal = document.getElementById("closeImportModal") as HTMLElement | null;
+const cancelImport = document.getElementById("cancelImport") as HTMLElement | null;
+const confirmImport = document.getElementById("confirmImport") as HTMLButtonElement | null;
+
+let importFile: File | null = null;
+
+export function openImportModal() {
+  importModal?.classList.add("show");
+}
+
+function closeImport() {
+  importModal?.classList.remove("show");
+  importFile = null;
+
+  if (importFileInfo) importFileInfo.textContent = "";
+  if (importError) importError.style.display = "none";
+  if (confirmImport) confirmImport.disabled = true;
+
+  importFileInput!.value = "";
+}
+
+closeImportModal?.addEventListener("click", closeImport);
+cancelImport?.addEventListener("click", closeImport);
+
+importFileInput?.addEventListener("change", () => {
+  importFile = importFileInput.files?.[0] ?? null;
+
+  if (!importFile) {
+    confirmImport!.disabled = true;
+    importFileInfo!.textContent = "";
+    return;
+  }
+
+  importFileInfo!.textContent = `Selected: ${importFile.name} (${(importFile.size / 1024).toFixed(1)} KB)`;
+  confirmImport!.disabled = false;
+});
+
+confirmImport?.addEventListener("click", async () => {
+  if (!importFile) return;
+
+  try {
+    const text = await importFile.text();
+    const data = JSON.parse(text);
+
+    await chrome.storage.local.set({ sessions: data });
+
+    closeImport();
+
+    // Reload popup UI
+    location.reload();
+  } catch (err) {
+    console.error(err);
+    importError!.textContent = "Invalid JSON file.";
+    importError!.style.display = "block";
+  }
+});
+
+// =======================
+// Modal: Clear All Sessions
+// =======================
+const clearAllModal = document.getElementById("clearAllModal") as HTMLElement | null;
+const closeClearAllModal = document.getElementById("closeClearAllModal") as HTMLElement | null;
+const cancelClearAll = document.getElementById("cancelClearAll") as HTMLElement | null;
+const confirmClearAll = document.getElementById("confirmClearAll") as HTMLElement | null;
+
+function openClearAllModal() {
+  clearAllModal?.classList.add("show");
+}
+
+function closeClearAll() {
+  clearAllModal?.classList.remove("show");
+}
+
+closeClearAllModal?.addEventListener("click", closeClearAll);
+cancelClearAll?.addEventListener("click", closeClearAll);
+
+confirmClearAll?.addEventListener("click", async () => {
+  await chrome.storage.local.set({ sessions: {} });
+  closeClearAll();
+  location.reload();
+});
+
+// =======================
+// HELP MODAL
+// =======================
+const helpModal = document.getElementById("helpModal") as HTMLElement | null;
+const closeHelpModal = document.getElementById("closeHelpModal");
+const closeHelpBtn = document.getElementById("closeHelpBtn");
+
+export function openHelpModal() {
+  helpModal?.classList.add("show");
+}
+
+function closeHelp() {
+  helpModal?.classList.remove("show");
+}
+
+closeHelpModal?.addEventListener("click", closeHelp);
+closeHelpBtn?.addEventListener("click", closeHelp);
+
+// =======================
+// ABOUT MODAL
+// =======================
+const aboutModal = document.getElementById("aboutModal") as HTMLElement | null;
+const closeAboutModal = document.getElementById("closeAboutModal");
+const closeAboutBtn = document.getElementById("closeAboutBtn");
+
+export function openAboutModal() {
+  aboutModal?.classList.add("show");
+}
+
+function closeAbout() {
+  aboutModal?.classList.remove("show");
+}
+
+closeAboutModal?.addEventListener("click", closeAbout);
+closeAboutBtn?.addEventListener("click", closeAbout);

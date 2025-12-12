@@ -1,5 +1,4 @@
 import { CSS_CLASSES, UI_TEXT } from "@popup/utils/constants";
-import { escapeHtml } from "@popup/utils/dom";
 import { ActiveSessions, SessionData } from "@shared/types";
 import { formatDate } from "@shared/utils/date";
 
@@ -60,24 +59,37 @@ export class SessionList {
         const lastUsed = formatDate(session.lastUsed);
 
         return `
-        <div class="${CSS_CLASSES.SESSION_ITEM} ${isActive ? CSS_CLASSES.ACTIVE : ""}"
-             data-session-id="${session.id}"
-             draggable="true">
-          <div class="drag-handle">⋮⋮</div>
-          <div class="session-info">
-            <div class="session-name">${escapeHtml(session.name)}</div>
-            <div class="session-meta">${UI_TEXT.LAST_USED} ${lastUsed}</div>
-          </div>
-          <div class="session-actions">
-            <button class="${CSS_CLASSES.SESSION_BTN} rename-btn" data-action="rename" data-session-id="${session.id}">
-              ✏️
-            </button>
-            <button class="${CSS_CLASSES.SESSION_BTN} delete-btn" data-action="delete" data-session-id="${session.id}">
-              🗑️
-            </button>
+      <div class="session-row-outer">
+
+        <div class="session-card-wrapper">
+          <div class="${CSS_CLASSES.SESSION_ITEM} ${isActive ? CSS_CLASSES.ACTIVE : ""}" draggable="true" data-session-id="${session.id}">
+
+            <div class="drag-handle">⋮⋮</div>
+
+            <div class="session-info">
+                <div class="session-name">${session.name || UI_TEXT.UNNAMED_SESSION}</div>
+                <div class="session-meta">${UI_TEXT.LAST_USED} ${lastUsed}</div>
+            </div>
+
           </div>
         </div>
-      `;
+
+        <div class="session-actions-inline">
+          <button class="session-btn rename-btn"
+                  data-action="rename"
+                  data-session-id="${session.id}">
+              Edit
+          </button>
+
+          <button class="session-btn delete-btn"
+                  data-action="delete"
+                  data-session-id="${session.id}">
+              Delete
+          </button>
+        </div>
+
+      </div>
+    `;
       })
       .join("");
 
@@ -118,40 +130,51 @@ export class SessionList {
 
   private handleDragStart(e: DragEvent): void {
     const target = e.target as HTMLElement;
-    if (target.classList.contains(CSS_CLASSES.SESSION_ITEM)) {
-      this.draggedElement = target;
-      target.classList.add("dragging");
-      e.dataTransfer!.effectAllowed = "move";
-      e.dataTransfer!.setData("text/html", target.innerHTML);
+    const sessionItem = target.closest(`.${CSS_CLASSES.SESSION_ITEM}`) as HTMLElement | null;
+    if (!sessionItem) return;
+
+    const row = sessionItem.closest(".session-row-outer") as HTMLElement | null;
+    if (!row) return;
+
+    this.draggedElement = row;
+    row.classList.add("dragging");
+
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      const sessionId = sessionItem.dataset.sessionId ?? "";
+      e.dataTransfer.setData("text/plain", sessionId);
     }
   }
 
   private handleDragOver(e: DragEvent): void {
     e.preventDefault();
-    e.dataTransfer!.dropEffect = "move";
-  }
-
-  private handleDragEnter(e: DragEvent): void {
-    const target = (e.target as HTMLElement).closest(`.${CSS_CLASSES.SESSION_ITEM}`) as HTMLElement;
-    if (target && target !== this.draggedElement) {
-      if (this.draggedOverElement && this.draggedOverElement !== target) {
-        this.draggedOverElement.classList.remove("drag-over");
-      }
-      target.classList.add("drag-over");
-      this.draggedOverElement = target;
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "move";
     }
   }
 
-  private handleDragLeave(e: DragEvent): void {
-    const target = (e.target as HTMLElement).closest(`.${CSS_CLASSES.SESSION_ITEM}`) as HTMLElement;
-    const relatedTarget = e.relatedTarget as HTMLElement;
+  private handleDragEnter(e: DragEvent): void {
+    const row = (e.target as HTMLElement).closest(".session-row-outer") as HTMLElement | null;
+    if (!row || row === this.draggedElement) return;
 
-    if (target && relatedTarget) {
-      const leavingToOutside = !target.contains(relatedTarget);
-      if (leavingToOutside && target === this.draggedOverElement) {
-        target.classList.remove("drag-over");
-        this.draggedOverElement = null;
-      }
+    if (this.draggedOverElement && this.draggedOverElement !== row) {
+      this.draggedOverElement.classList.remove("drag-over");
+    }
+
+    row.classList.add("drag-over");
+    this.draggedOverElement = row;
+  }
+
+  private handleDragLeave(e: DragEvent): void {
+    const row = (e.target as HTMLElement).closest(".session-row-outer") as HTMLElement | null;
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+
+    if (!row || !relatedTarget) return;
+
+    const leavingToOutside = !row.contains(relatedTarget);
+    if (leavingToOutside && row === this.draggedOverElement) {
+      row.classList.remove("drag-over");
+      this.draggedOverElement = null;
     }
   }
 
@@ -159,19 +182,21 @@ export class SessionList {
     e.preventDefault();
     e.stopPropagation();
 
-    const target = (e.target as HTMLElement).closest(`.${CSS_CLASSES.SESSION_ITEM}`) as HTMLElement;
+    const row = (e.target as HTMLElement).closest(".session-row-outer") as HTMLElement | null;
 
-    if (target && this.draggedElement && target !== this.draggedElement) {
-      const allItems = Array.from(this.container.querySelectorAll(`.${CSS_CLASSES.SESSION_ITEM}`)) as HTMLElement[];
-      const draggedIndex = allItems.indexOf(this.draggedElement);
-      const targetIndex = allItems.indexOf(target);
+    if (row && this.draggedElement && row !== this.draggedElement) {
+      const allRows = Array.from(this.container.querySelectorAll(".session-row-outer")) as HTMLElement[];
+
+      const draggedIndex = allRows.indexOf(this.draggedElement);
+      const targetIndex = allRows.indexOf(row);
 
       if (draggedIndex < targetIndex) {
-        target.after(this.draggedElement);
+        row.after(this.draggedElement);
       } else {
-        target.before(this.draggedElement);
+        row.before(this.draggedElement);
       }
 
+      // Order session IDs berdasarkan urutan baru
       const reorderedIds = Array.from(this.container.querySelectorAll(`.${CSS_CLASSES.SESSION_ITEM}`)).map(
         (item) => (item as HTMLElement).dataset.sessionId!
       );
@@ -184,12 +209,19 @@ export class SessionList {
 
   private handleDragEnd(e: DragEvent): void {
     const target = e.target as HTMLElement;
+
+    // Bersihkan kelas dragging di row & item
+    const row = target.closest(".session-row-outer") as HTMLElement | null;
+    if (row) {
+      row.classList.remove("dragging");
+    }
     if (target.classList.contains(CSS_CLASSES.SESSION_ITEM)) {
       target.classList.remove("dragging");
     }
 
-    const allItems = this.container.querySelectorAll(`.${CSS_CLASSES.SESSION_ITEM}`);
-    allItems.forEach((item) => item.classList.remove("drag-over"));
+    // Bersihkan semua "drag-over"
+    const allRows = this.container.querySelectorAll(".session-row-outer");
+    allRows.forEach((r) => r.classList.remove("drag-over"));
 
     this.draggedElement = null;
     this.draggedOverElement = null;
