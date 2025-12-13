@@ -416,6 +416,8 @@ export function openTransferModal(tab: TransferTab) {
   transferModal?.classList.add("show");
   if (exportError) exportError.style.display = "none";
   setActiveTransferTab(tab);
+  setTransferView("local", "export");
+  renderTransferUI();
 }
 
 function closeTransfer() {
@@ -426,6 +428,24 @@ function closeTransfer() {
   if (importError) importError.style.display = "none";
   if (confirmImport) confirmImport.disabled = true;
   if (importFileInput) importFileInput.value = "";
+
+  cloudExportBlocked = false;
+  cloudImportBlocked = false;
+
+  if (cloudExportBtn) {
+    cloudExportBtn.disabled = false;
+    cloudExportBtn.textContent = "Generate Transfer Code";
+  }
+
+  if (cloudImportBtn) {
+    cloudImportBtn.disabled = false;
+    cloudImportBtn.textContent = "Import Sessions";
+  }
+
+  clearError(cloudExportError);
+  clearError(cloudImportError);
+  cloudImportFailCount = 0;
+  cloudImportBlocked = false;
 }
 
 function getExportScope(): "current" | "all" {
@@ -440,6 +460,7 @@ cancelTransfer2?.addEventListener("click", closeTransfer);
 
 transferTabExport?.addEventListener("click", () => setActiveTransferTab("export"));
 transferTabImport?.addEventListener("click", () => setActiveTransferTab("import"));
+let cloudImportBlocked = false;
 
 importFileInput?.addEventListener("change", () => {
   importFile = importFileInput.files?.[0] ?? null;
@@ -515,6 +536,255 @@ confirmClearAll?.addEventListener("click", async () => {
   await chrome.storage.local.set({ sessions: {} });
   closeClearAll();
   location.reload();
+});
+
+function showError(el: HTMLElement | null, message: string) {
+  if (!el) return;
+  el.textContent = message;
+  el.style.display = "block";
+}
+
+function clearError(el: HTMLElement | null) {
+  if (!el) return;
+  el.textContent = "";
+  el.style.display = "none";
+}
+
+async function buildExportData(scope: "current" | "all"): Promise<any[]> {
+  if (!popupService) return [];
+
+  const { sessions } = await chrome.storage.local.get("sessions");
+  const allSessions: any[] = Array.isArray(sessions) ? sessions : [];
+
+  if (scope === "all") return allSessions;
+
+  const { currentDomain } = popupService.getState();
+  return allSessions.filter((s) => s.domain === currentDomain);
+}
+
+const cloudExportBtn = document.getElementById("cloudExportBtn") as HTMLButtonElement | null;
+const cloudExportResult = document.getElementById("cloudExportResult") as HTMLElement | null;
+const transferCodeText = document.getElementById("transferCodeText") as HTMLElement | null;
+const copyTransferCode = document.getElementById("copyTransferCode") as HTMLButtonElement | null;
+let cloudExportBlocked = false;
+
+const cloudExportError = document.getElementById("cloudExportError") as HTMLElement | null;
+
+cloudExportBtn?.addEventListener("click", async () => {
+  if (!cloudExportBtn || cloudExportBlocked) return;
+
+  clearError(cloudExportError);
+
+  cloudExportBtn.disabled = true;
+  cloudExportBtn.textContent = "Generating...";
+
+  try {
+    const data = await buildExportData("all");
+
+    if (data.length === 0) {
+      showError(cloudExportError, "No sessions available to export.");
+      return;
+    }
+
+    const res = await fetch("https://api.bitx.gitmeriz.my.id/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: data }),
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      if (res.status === 429) {
+        cloudExportBlocked = true;
+
+        cloudExportBtn.disabled = true;
+        cloudExportBtn.textContent = "Export Limit Reached";
+
+        showError(cloudExportError, "Export limit reached. Please try again in 1 hour.");
+      } else {
+        showError(cloudExportError, text || "Failed to generate transfer code.");
+      }
+      return;
+    }
+
+    const result = JSON.parse(text);
+
+    if (transferCodeText && cloudExportResult) {
+      transferCodeText.textContent = result.transfer_code;
+      cloudExportResult.style.display = "block";
+    }
+  } catch (err) {
+    console.error("Cloud export failed:", err);
+    showError(cloudExportError, "Failed to generate transfer code. Please try again.");
+  } finally {
+    if (!cloudExportBlocked) {
+      cloudExportBtn.disabled = false;
+      cloudExportBtn.textContent = "Generate Transfer Code";
+    }
+  }
+});
+
+copyTransferCode?.addEventListener("click", async () => {
+  if (!transferCodeText) return;
+
+  await navigator.clipboard.writeText(transferCodeText.textContent || "");
+  copyTransferCode.textContent = "Copied!";
+  setTimeout(() => {
+    copyTransferCode.textContent = "Copy";
+  }, 1200);
+});
+
+const cloudImportBtn = document.getElementById("cloudImportBtn") as HTMLButtonElement | null;
+const cloudImportCode = document.getElementById("cloudImportCode") as HTMLInputElement | null;
+const cloudImportError = document.getElementById("cloudImportError") as HTMLElement | null;
+let cloudImportFailCount = 0;
+const MAX_IMPORT_FAIL = 5;
+
+cloudImportBtn?.addEventListener("click", async () => {
+  if (!cloudImportBtn || cloudImportBlocked) return;
+
+  clearError(cloudImportError);
+
+  const code = cloudImportCode?.value.trim();
+  if (!code) {
+    showError(cloudImportError, "Please enter a transfer code.");
+    return;
+  }
+
+  cloudImportBtn.disabled = true;
+  cloudImportBtn.textContent = "Importing...";
+
+  try {
+    const res = await fetch("https://api.bitx.gitmeriz.my.id/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transfer_code: code }),
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      if (res.status === 429) {
+        cloudImportBlocked = true;
+
+        cloudImportBtn.disabled = true;
+        cloudImportBtn.textContent = "Import Limit Reached";
+
+        showError(cloudImportError, "Import limit reached. Please try again in 1 hour.");
+      } else if (res.status === 404) {
+        cloudImportFailCount++;
+
+        if (cloudImportFailCount >= MAX_IMPORT_FAIL) {
+          cloudImportBlocked = true;
+
+          cloudImportBtn.disabled = true;
+          cloudImportBtn.textContent = "Too Many Attempts";
+
+          showError(cloudImportError, "Too many invalid attempts. Please wait before trying again.");
+        } else {
+          showError(cloudImportError, "Invalid or expired transfer code.");
+        }
+      } else {
+        showError(cloudImportError, "Failed to import sessions.");
+      }
+      return;
+    }
+
+    const result = JSON.parse(text);
+
+    if (!Array.isArray(result.payload)) {
+      throw new Error("Invalid payload format");
+    }
+
+    await mergeSessions(result.payload);
+
+    closeTransfer();
+    location.reload();
+  } catch (err) {
+    console.error("Cloud import failed:", err);
+    showError(cloudImportError, "Failed to import sessions. Please try again.");
+  } finally {
+    if (!cloudImportBlocked) {
+      cloudImportBtn.disabled = false;
+      cloudImportBtn.textContent = "Import Sessions";
+    }
+  }
+});
+
+document.querySelectorAll(".modal-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.getAttribute("data-tab") as "local" | "cloud";
+
+    activeMainTab = target;
+
+    activeSubTab = "export";
+
+    document.querySelectorAll(".modal-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    renderTransferUI();
+  });
+});
+
+function setTransferView(main: "local" | "cloud", sub: "export" | "import") {
+  // main tabs
+  document.querySelectorAll(".modal-tab").forEach((t) => {
+    t.classList.toggle("active", t.getAttribute("data-tab") === main);
+  });
+
+  document.querySelectorAll(".transfer-panel").forEach((p) => {
+    const el = p as HTMLElement;
+    el.style.display = el.dataset.panel === main ? "block" : "none";
+  });
+
+  // sub tabs
+  document.querySelectorAll(".sub-tab").forEach((t) => {
+    t.classList.toggle("active", t.getAttribute("data-subtab") === `${main}-${sub}`);
+  });
+
+  document.querySelectorAll(".sub-panel").forEach((p) => {
+    const el = p as HTMLElement;
+    el.style.display = el.dataset.subpanel === `${main}-${sub}` ? "block" : "none";
+  });
+}
+
+let activeMainTab: "local" | "cloud" = "local";
+let activeSubTab: "export" | "import" = "export";
+
+function renderTransferUI() {
+  document.querySelectorAll(".transfer-panel").forEach((panel) => {
+    panel.setAttribute("style", panel.getAttribute("data-panel") === activeMainTab ? "display:block" : "display:none");
+  });
+
+  document.querySelectorAll(".transfer-panel").forEach((panel) => {
+    const el = panel as HTMLElement;
+    el.style.display = el.dataset.panel === activeMainTab ? "block" : "none";
+  });
+
+  document.querySelectorAll(".sub-panel").forEach((panel) => {
+    panel.setAttribute(
+      "style",
+      panel.getAttribute("data-subpanel") === `${activeMainTab}-${activeSubTab}` ? "display:block" : "display:none"
+    );
+  });
+
+  document.querySelectorAll(".sub-tab").forEach((tab) => {
+    tab.classList.toggle("active", tab.getAttribute("data-subtab") === `${activeMainTab}-${activeSubTab}`);
+  });
+}
+
+document.querySelectorAll(".sub-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const key = tab.getAttribute("data-subtab")!;
+
+    const [main, sub] = key.split("-") as ["local" | "cloud", "export" | "import"];
+
+    activeMainTab = main;
+    activeSubTab = sub;
+
+    renderTransferUI();
+  });
 });
 
 const helpModal = document.getElementById("helpModal") as HTMLElement | null;

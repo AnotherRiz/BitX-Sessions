@@ -1,0 +1,8 @@
+Major Update: Modify Export/Import Modal
+
+1. Remake UI Export/Import
+- Added Export/Import on Cloud
+- Improved Transfer Modal UI (Local/Cloud, Export/Import tabs)
+- Replaced alerts with inline error messages and disabled buttons on limits
+- Implemented export/import using temporary transfer codes
+- Added backend validation, rate limiting, and brute-force protection

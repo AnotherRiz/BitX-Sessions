@@ -136,63 +136,107 @@
       </div>
     </div>
 
-    <div id="transferModal" class="modal">
+    <div id="transferModal" class="modal modal-transfer">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 id="transferModalTitle">Sessions</h3>
+          <h3>Transfer Sessions</h3>
           <button id="closeTransferModal" class="close-btn">&times;</button>
         </div>
 
-        <!-- Tabs -->
+        <!-- LEVEL 1: Local / Cloud -->
         <div class="modal-tabs">
-          <button id="transferTabExport" class="modal-tab active" data-tab="export">Export</button>
-          <button id="transferTabImport" class="modal-tab" data-tab="import">Import</button>
+          <button class="modal-tab active" data-tab="local">Local</button>
+          <button class="modal-tab" data-tab="cloud">Cloud <span class="badge-new">NEW</span></button>
         </div>
 
         <div class="modal-body">
-          <!-- EXPORT PANEL -->
-          <div class="transfer-panel" data-panel="export">
-            <div class="export-options">
-              <label class="export-card">
-                <input type="radio" name="exportScope" value="current" checked />
-                <div class="export-card-content">
-                  <div class="export-card-title">Export current site</div>
-                </div>
-              </label>
-
-              <label class="export-card">
-                <input type="radio" name="exportScope" value="all" />
-                <div class="export-card-content">
-                  <div class="export-card-title">Export all sessions</div>
-                </div>
-              </label>
+          <div class="transfer-panel" data-panel="local">
+            <div class="sub-tabs">
+              <button class="sub-tab active" data-subtab="local-export">Export</button>
+              <button class="sub-tab" data-subtab="local-import">Import</button>
             </div>
 
-            <p style="opacity: 0.8; font-size: 13px; margin-top: 10px">File will be saved as JSON.</p>
-            <p id="exportError" style="color: #ff6b6b; font-size: 13px; display: none; margin-top: 10px"></p>
+            <div class="sub-panel" data-subpanel="local-export">
+              <div class="export-options">
+                <label class="export-card">
+                  <input type="radio" name="exportScope" value="current" checked />
+                  <div class="export-card-content">
+                    <div class="export-card-title">Only current site</div>
+                  </div>
+                </label>
+
+                <label class="export-card">
+                  <input type="radio" name="exportScope" value="all" />
+                  <div class="export-card-content">
+                    <div class="export-card-title">All sessions</div>
+                  </div>
+                </label>
+              </div>
+              <p class="hint-text">File will be downloaded as JSON.</p>
+              <button id="confirmExport" class="btn btn-primary full-width">Export Sessions</button>
+              <p id="exportError" class="error-text" style="display: none"></p>
+            </div>
+
+            <div class="sub-panel" data-subpanel="local-import" style="display: none">
+              <p class="hint-text">
+                Import a previously exported BitX sessions file.<br />
+                Existing sessions on the same domain will be replaced.
+              </p>
+
+              <input type="file" id="importFileInput" accept="application/json" />
+              <p id="importFileInfo" class="file-info"></p>
+              <p id="importError" class="error-text" style="display: none"></p>
+              <button id="confirmImport" class="btn btn-primary full-width" disabled>Import Sessions</button>
+            </div>
           </div>
 
-          <!-- IMPORT PANEL (pakai UI lama kamu) -->
-          <div class="transfer-panel" data-panel="import" style="display: none">
-            <p>Select your <strong>BitX-Sessions.json</strong> file.</p>
-            <p>This action will <strong>replace your current session</strong></p>
+          <div class="transfer-panel" data-panel="cloud" style="display: none">
+            <div class="sub-tabs">
+              <button class="sub-tab active" data-subtab="cloud-export">Export</button>
+              <button class="sub-tab" data-subtab="cloud-import">Import</button>
+            </div>
 
-            <input type="file" id="importFileInput" accept="application/json" style="margin-top: 12px" />
+            <div class="sub-panel" data-subpanel="cloud-export">
+              <p class="hint-text">Generate a temporary transfer code to move sessions between devices.</p>
+              <p id="cloudExportError" class="error-text" style="display: none"></p>
 
-            <p id="importFileInfo" style="margin-top: 10px; font-size: 13px; color: #ccc"></p>
-            <p id="importError" style="color: #ff6b6b; font-size: 13px; display: none"></p>
+              <div class="tooltip-wrapper">
+                <button id="cloudExportBtn" class="btn btn-primary full-width">Generate Transfer Code</button>
+
+                <div class="tooltip">
+                  Anyone with this code can import your sessions. Expires in 15 minutes and can only be used once.
+                </div>
+              </div>
+
+              <div id="cloudExportResult" style="display: none; margin-top: 12px">
+                <div class="code-box">
+                  <span id="transferCodeText"></span>
+                  <button id="copyTransferCode" class="btn btn-secondary btn-small">Copy</button>
+                </div>
+                <p class="hint-text">This code expires in 15 minutes.</p>
+              </div>
+            </div>
+
+            <div class="sub-panel" data-subpanel="cloud-import" style="display: none">
+              <p class="hint-text">
+                Paste a transfer code to import sessions.<br />
+                Sessions on the same domain will be replaced.
+              </p>
+              <p id="cloudImportError" class="error-text" style="display: none"></p>
+
+              <input type="text" id="cloudImportCode" placeholder="BITX-XXXX-XXXX-XXXX" />
+
+              <button id="cloudImportBtn" class="btn btn-primary full-width" style="margin-top: 10px">
+                Import Sessions
+              </button>
+
+              <p id="cloudImportError" class="error-text" style="display: none"></p>
+            </div>
           </div>
         </div>
 
-        <!-- Footer (switch sesuai tab) -->
-        <div class="modal-footer transfer-footer" data-footer="export">
-          <button id="cancelTransfer" class="btn btn-secondary">Cancel</button>
-          <button id="confirmExport" class="btn btn-primary">Export</button>
-        </div>
-
-        <div class="modal-footer transfer-footer" data-footer="import" style="display: none">
-          <button id="cancelTransfer2" class="btn btn-secondary">Cancel</button>
-          <button id="confirmImport" class="btn btn-primary" disabled>Import</button>
+        <div class="modal-footer">
+          <button id="cancelTransfer" class="btn btn-secondary">Close</button>
         </div>
       </div>
     </div>
