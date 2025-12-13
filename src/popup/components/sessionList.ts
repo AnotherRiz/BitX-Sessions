@@ -67,7 +67,7 @@ export class SessionList {
             <div class="drag-handle">⋮⋮</div>
 
             <div class="session-info">
-                <div class="session-name">${session.name || UI_TEXT.UNNAMED_SESSION}</div>
+                <div class="session-name limit-name">${session.name || UI_TEXT.UNNAMED_SESSION}</div>
                 <div class="session-meta">${UI_TEXT.LAST_USED} ${lastUsed}</div>
             </div>
 

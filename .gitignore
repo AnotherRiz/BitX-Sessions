@@ -3,3 +3,4 @@ dist
 *.zip
 coverage
 package-lock.json
+update.txt
