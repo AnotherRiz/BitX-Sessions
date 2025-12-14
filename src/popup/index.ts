@@ -57,6 +57,37 @@ class PopupController {
     }
   }
 
+  private setupSessionViewToggle(): void {
+    const toggle = document.getElementById("sessionsViewToggle");
+    if (!toggle) return;
+
+    const buttons = Array.from(toggle.querySelectorAll<HTMLButtonElement>(".view-btn"));
+    if (buttons.length === 0) return;
+
+    const saved = (localStorage.getItem("bitx_session_list_view") ?? "list") as "list" | "grid";
+    const initialView: "list" | "grid" = saved === "grid" ? "grid" : "list";
+
+    this.applySessionView(initialView);
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const view = (btn.dataset.view as "list" | "grid") ?? "list";
+        this.applySessionView(view);
+        localStorage.setItem("bitx_session_list_view", view);
+        this.renderSessionsList();
+      });
+    });
+  }
+
+  private applySessionView(view: "list" | "grid"): void {
+    this.sessionList.setViewMode(view);
+
+    const toggle = document.getElementById("sessionsViewToggle");
+    toggle?.querySelectorAll<HTMLButtonElement>(".view-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.view === view);
+    });
+  }
+
   constructor() {
     // Get DOM elements
     this.currentSiteElement = getElementByIdSafe("currentSite");
@@ -67,6 +98,7 @@ class PopupController {
     this.sessionList = new SessionList(getElementByIdSafe("sessionsList"));
     this.setupSessionListHandlers();
     this.setupEventListeners();
+    this.setupSessionViewToggle();
   }
 
   async initialize(): Promise<void> {

@@ -2,6 +2,8 @@ import { CSS_CLASSES, UI_TEXT } from "@popup/utils/constants";
 import { ActiveSessions, SessionData } from "@shared/types";
 import { formatDate } from "@shared/utils/date";
 
+type SessionListView = "list" | "grid";
+
 export class SessionList {
   private container: HTMLElement;
   private onSessionClick?: (sessionId: string) => void;
@@ -10,6 +12,7 @@ export class SessionList {
   private onReorder?: (sessionIds: string[]) => void;
   private draggedElement: HTMLElement | null = null;
   private draggedOverElement: HTMLElement | null = null;
+  private viewMode: SessionListView = "list";
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -34,7 +37,16 @@ export class SessionList {
     this.onReorder = handlers.onReorder;
   }
 
+  setViewMode(mode: SessionListView): void {
+    this.viewMode = mode;
+    this.container.classList.toggle("view-grid", mode === "grid");
+    this.container.classList.toggle("view-list", mode === "list");
+  }
+
   render(sessions: SessionData[], activeSessions: ActiveSessions, currentDomain: string): void {
+    this.container.classList.toggle("view-grid", this.viewMode === "grid");
+    this.container.classList.toggle("view-list", this.viewMode === "list");
+
     const domainSessions = sessions
       .filter((s) => s.domain === currentDomain)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -45,14 +57,18 @@ export class SessionList {
       return;
     }
 
-    this.renderSessions(domainSessions, activeSessionId);
+    if (this.viewMode === "grid") {
+      this.renderSessionsGrid(domainSessions, activeSessionId);
+    } else {
+      this.renderSessionsList(domainSessions, activeSessionId);
+    }
   }
 
   private renderEmptyState(): void {
     this.container.innerHTML = `<div class="${CSS_CLASSES.NO_SESSIONS}">${UI_TEXT.NO_SESSIONS}</div>`;
   }
 
-  private renderSessions(sessions: SessionData[], activeSessionId?: string): void {
+  private renderSessionsList(sessions: SessionData[], activeSessionId?: string): void {
     const sessionsHtml = sessions
       .map((session) => {
         const isActive = session.id === activeSessionId;
@@ -96,6 +112,43 @@ export class SessionList {
     this.container.innerHTML = sessionsHtml;
   }
 
+  private renderSessionsGrid(sessions: SessionData[], activeSessionId?: string): void {
+    const sessionsHtml = sessions
+      .map((session, index) => {
+        const isActive = session.id === activeSessionId;
+
+        return `
+        <div class="session-row-outer">
+          <div class="${CSS_CLASSES.SESSION_ITEM} ${isActive ? CSS_CLASSES.ACTIVE : ""}"
+               draggable="true"
+               data-session-id="${session.id}">
+
+            <div class="session-card-top compact">
+              <div class="session-left">
+                <div class="drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</div>
+                <div class="session-order-badge" title="Order">${index + 1}</div>
+
+                <div class="session-name limit-name">
+                  ${session.name || UI_TEXT.UNNAMED_SESSION}
+                </div>
+              </div>
+            </div>
+
+            <div class="session-actions-inline">
+              <button class="session-btn rename-btn" title="Rename"
+                      data-action="rename" data-session-id="${session.id}">✏️</button>
+              <button class="session-btn delete-btn" title="Delete"
+                      data-action="delete" data-session-id="${session.id}">🗑️</button>
+            </div>
+          </div>
+        </div>
+      `;
+      })
+      .join("");
+
+    this.container.innerHTML = sessionsHtml;
+  }
+
   private handleClick(e: Event): void {
     const target = e.target as HTMLElement;
 
@@ -118,13 +171,10 @@ export class SessionList {
       return;
     }
 
-    // Handle session switching
     const sessionItem = target.closest(`.${CSS_CLASSES.SESSION_ITEM}`) as HTMLElement;
     if (sessionItem && this.onSessionClick) {
       const sessionId = sessionItem.dataset.sessionId;
-      if (sessionId) {
-        this.onSessionClick(sessionId);
-      }
+      if (sessionId) this.onSessionClick(sessionId);
     }
   }
 
@@ -148,9 +198,7 @@ export class SessionList {
 
   private handleDragOver(e: DragEvent): void {
     e.preventDefault();
-    if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = "move";
-    }
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
   }
 
   private handleDragEnter(e: DragEvent): void {
@@ -196,30 +244,26 @@ export class SessionList {
         row.before(this.draggedElement);
       }
 
-      // Order session IDs berdasarkan urutan baru
       const reorderedIds = Array.from(this.container.querySelectorAll(`.${CSS_CLASSES.SESSION_ITEM}`)).map(
         (item) => (item as HTMLElement).dataset.sessionId!
       );
 
-      if (this.onReorder) {
-        this.onReorder(reorderedIds);
-      }
+      if (this.onReorder) this.onReorder(reorderedIds);
     }
+
+    const allRows = this.container.querySelectorAll(".session-row-outer");
+    allRows.forEach((r) => r.classList.remove("drag-over"));
+    this.draggedElement = null;
+    this.draggedOverElement = null;
   }
 
   private handleDragEnd(e: DragEvent): void {
     const target = e.target as HTMLElement;
-
-    // Bersihkan kelas dragging di row & item
     const row = target.closest(".session-row-outer") as HTMLElement | null;
-    if (row) {
-      row.classList.remove("dragging");
-    }
-    if (target.classList.contains(CSS_CLASSES.SESSION_ITEM)) {
-      target.classList.remove("dragging");
-    }
 
-    // Bersihkan semua "drag-over"
+    if (row) row.classList.remove("dragging");
+    if (target.classList.contains(CSS_CLASSES.SESSION_ITEM)) target.classList.remove("dragging");
+
     const allRows = this.container.querySelectorAll(".session-row-outer");
     allRows.forEach((r) => r.classList.remove("drag-over"));
 

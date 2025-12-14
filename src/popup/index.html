@@ -41,8 +41,16 @@
 
       <main class="content">
         <div class="sessions-section">
-          <h3 class="section-title">Saved Sessions</h3>
-          <div id="sessionsList" class="sessions-list">
+          <div class="sessions-header">
+            <h3 class="section-title">Saved Sessions</h3>
+
+            <div class="view-toggle" id="sessionsViewToggle">
+              <button class="view-btn" data-view="list" title="List view">List</button>
+              <button class="view-btn" data-view="grid" title="Grid view">Grid</button>
+            </div>
+          </div>
+
+          <div id="sessionsList" class="sessions-list view-list">
             <div class="no-sessions">No sessions saved for this site</div>
           </div>
         </div>
