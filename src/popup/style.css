@@ -283,10 +283,28 @@ body {
   color: #92cba7;
 }
 
+.session-name-badge {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: #cfe0ff;
+  opacity: 0.9;
+}
+
+.session-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .session-name {
   font-weight: 600;
   color: #eceff4;
   margin-bottom: 4px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .limit-name {
@@ -938,10 +956,12 @@ button:disabled {
 }
 
 .sessions-list.view-grid .session-name.limit-name {
+  max-width: 10ch;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-block;
   min-width: 0;
   flex: 1;
 }
@@ -1013,4 +1033,23 @@ button:disabled {
 .sessions-list.view-grid .session-actions-inline .delete-btn:hover {
   border-color: rgba(255, 99, 99, 0.45);
   background: rgba(255, 99, 99, 0.1);
+}
+
+.session-btn .icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  display: block;
+}
+
+.sessions-list.view-grid .session-actions-inline .session-btn {
+  color: #c7cad7;
+}
+
+.sessions-list.view-grid .session-actions-inline .session-btn:hover {
+  color: #667eea;
+}
+
+.sessions-list.view-grid .session-actions-inline .delete-btn:hover {
+  color: #fb2e01;
 }
