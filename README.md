@@ -1,39 +1,36 @@
-# 🔄 Session Switcher
+# BitX Session
 
-**Session Switcher** is a browser extension that allows users to manage, save, and switch between multiple login sessions with ease and 100% free!.
-It's especially useful for developers, testers, or anyone who frequently switches between accounts or environments.
+**Bitx Session** is a 100% free browser extension that makes managing multiple logins effortless. Save your sessions once, then switch between accounts instantly—no logging out, no retyping, no hassle.
+Built for developers, QA testers, and power users, Bitx Session helps you jump between environments and identities in seconds, so you can stay focused and move faster.
 
-https://github.com/user-attachments/assets/480baf62-3279-45be-8a30-88f76a90a5f8
+<img width="349" height="400" alt="BitX Session - Saved Sessions List" src="https://github.com/user-attachments/assets/da565167-cade-48e1-9df7-c6f24927a1c5" />
+<img width="350" height="401" alt="BitX Session - Saved Sessions Grid" src="https://github.com/user-attachments/assets/93dd6827-4f63-4280-b68d-1f55d396d635" />
 
 ---
-
-## 🌍 Store Links
-
-- **Chrome Web Store** → [Session Switcher](https://chromewebstore.google.com/detail/session-switcher/mgekglkbhkpphbnhkmlhlnehaplibleh)
-- **Firefox Add-ons** → [Session Switcher](https://addons.mozilla.org/en-US/firefox/addon/session-switcher)
-- **Edge Add-ons** → [Session Switcher](https://chromewebstore.google.com/detail/session-switcher/mgekglkbhkpphbnhkmlhlnehaplibleh) (use chrome webstore)
-
 ---
 
 ## 🚀 Features
 
-- 🔐 **Save Login Sessions**  
+- **Save Login Sessions**  
   Capture and store cookies for the current session.
 
-- 🔄 **Switch Between Sessions Instantly**  
+- **Switch Between Sessions Instantly**  
   Load saved sessions with one click — no more logging in/out manually.
 
-- 💾 **Persistent Storage**  
+- **Persistent Storage**  
   All session data is stored locally and securely in your browser.
 
-- 🌐 **Multi-Site Support**  
+- **Multi-Site Support**  
   Manage sessions for different websites independently.
+
+- **Export and Import**  
+  Seamlessly export and import your saved sessions between devices in seconds. Fast, smooth, and hassle-free.
 
 ---
 
 ## 🐞 Bug Report / Feature Request
 
-Kindly create an issue [here](https://github.com/fanesz/session-switcher/issues).
+Kindly create an issue [here]([(https://github.com/AnotherRiz/BitX-Sessions/issues)).
 <br>Write a descriptive problem, step-to-reproduce, web browser that you use, and the website url.
 
 ---
@@ -42,7 +39,7 @@ Kindly create an issue [here](https://github.com/fanesz/session-switcher/issues)
 
 ### Chrome / Edge
 
-1. Download and extract from the [release tab](https://github.com/fanesz/session-switcher/releases).
+1. Download and extract from the [release tab](https://github.com/AnotherRiz/BitX-Sessions/releases).
 2. Open `chrome://extensions/` in your browser.
 3. Enable **Developer mode**.
 4. Click **Load unpacked** and select the downloaded folder.
