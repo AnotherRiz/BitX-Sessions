@@ -7,17 +7,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": false,
-    "outDir": "./dist",
-    "rootDir": "./src",
     "resolveJsonModule": true,
     "types": ["chrome"],
     "paths": {
       "@background/*": ["./src/background/*"],
       "@popup/*": ["./src/popup/*"],
       "@shared/*": ["./src/shared/*"]
-    }
+    },
+    "noEmit": true
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "test/**/*"]
 }

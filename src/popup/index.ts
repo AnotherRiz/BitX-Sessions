@@ -40,13 +40,12 @@ class PopupController {
       }
 
       await this.loadingManager.withLoading(async () => {
-        // If another session already has this name, delete it (so we can keep the current sessionId + order).
+        // If another session already has this name, delete it (keep the current sessionId + order).
         const conflict = this.findSessionByNameInCurrentDomain(newName, currentRenameSessionId);
         if (conflict) {
           await this.popupService.deleteSession(conflict.id);
         }
 
-        // ✅ overwrite in-place (keeps id + order)
         await this.popupService.overwriteSessionWithCurrent(currentRenameSessionId, newName);
       });
 
@@ -229,7 +228,6 @@ class PopupController {
       const url = domain.includes("://") ? domain : `https://${domain}`;
       await chrome.tabs.create({ url });
 
-      // optional: setelah klik domain, balik ke tab sessions
       this.setMainTab("sessions");
       localStorage.setItem("bitx_main_tab", "sessions");
     } catch (error) {
