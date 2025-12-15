@@ -40,20 +40,47 @@
       </header>
 
       <main class="content">
-        <div class="sessions-section">
-          <div class="sessions-header">
-            <h3 class="section-title">Saved Sessions</h3>
+        <!-- MAIN TABS -->
+        <div class="main-tabs" id="mainTabs">
+          <button class="main-tab active" data-main="sessions">Saved Sessions</button>
+          <button class="main-tab" data-main="domains">Saved Domains</button>
+        </div>
 
-            <div class="view-toggle" id="sessionsViewToggle">
-              <button class="view-btn" data-view="list" title="List view">List</button>
-              <button class="view-btn" data-view="grid" title="Grid view">Grid</button>
+        <!-- PANEL: SESSIONS -->
+        <section class="main-panel active" data-main-panel="sessions">
+          <div class="sessions-section">
+            <div class="sessions-header">
+              <h3 class="section-title">Saved Sessions</h3>
+
+              <div class="view-toggle" id="sessionsViewToggle">
+                <button class="view-btn" data-view="list" title="List view">List</button>
+                <button class="view-btn" data-view="grid" title="Grid view">Grid</button>
+              </div>
+            </div>
+
+            <div id="sessionsList" class="sessions-list view-list">
+              <div class="no-sessions">No sessions saved for this site</div>
             </div>
           </div>
+        </section>
 
-          <div id="sessionsList" class="sessions-list view-list">
-            <div class="no-sessions">No sessions saved for this site</div>
+        <!-- PANEL: DOMAINS -->
+        <section class="main-panel" data-main-panel="domains">
+          <div class="domains-section">
+            <div class="sessions-header">
+              <h3 class="section-title">Saved Domains</h3>
+
+              <div class="view-toggle" id="domainsViewToggle">
+                <button class="view-btn" data-view="list" title="List view">List</button>
+                <button class="view-btn" data-view="grid" title="Grid view">Grid</button>
+              </div>
+            </div>
+
+            <div id="domainsList" class="domains-list view-list">
+              <div class="no-sessions">No domains saved yet</div>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
     </div>
 

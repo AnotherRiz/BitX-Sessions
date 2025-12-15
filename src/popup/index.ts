@@ -19,6 +19,7 @@ class PopupController {
     this.popupService.setState({ currentRenameSessionId: "" });
     this.modalManager.hideRenameModal();
   }
+  private domainsListElement: HTMLElement | null = null;
 
   private findSessionByNameInCurrentDomain(name: string, excludeId?: string) {
     const state = this.popupService.getState();
@@ -87,6 +88,154 @@ class PopupController {
       btn.classList.toggle("active", btn.dataset.view === view);
     });
   }
+  private setupMainTabs(): void {
+    const container = document.getElementById("mainTabs");
+    if (!container) return;
+
+    const tabs = Array.from(container.querySelectorAll<HTMLButtonElement>(".main-tab"));
+    const panels = Array.from(document.querySelectorAll<HTMLElement>(".main-panel[data-main-panel]"));
+
+    if (tabs.length === 0 || panels.length === 0) return;
+
+    const saved = (localStorage.getItem("bitx_main_tab") ?? "sessions") as "sessions" | "domains";
+    const initial: "sessions" | "domains" = saved === "domains" ? "domains" : "sessions";
+    this.setMainTab(initial);
+
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tab = (btn.dataset.main as "sessions" | "domains") ?? "sessions";
+        this.setMainTab(tab);
+        localStorage.setItem("bitx_main_tab", tab);
+      });
+    });
+  }
+
+  private setMainTab(tab: "sessions" | "domains"): void {
+    const container = document.getElementById("mainTabs");
+    if (!container) return;
+
+    container.querySelectorAll<HTMLButtonElement>(".main-tab").forEach((b) => {
+      b.classList.toggle("active", b.dataset.main === tab);
+    });
+
+    document.querySelectorAll<HTMLElement>(".main-panel[data-main-panel]").forEach((p) => {
+      p.classList.toggle("active", p.dataset.mainPanel === tab);
+    });
+  }
+
+  private setupDomainsViewToggle(): void {
+    const toggle = document.getElementById("domainsViewToggle");
+    const list = document.getElementById("domainsList");
+
+    this.domainsListElement = list;
+
+    if (!toggle || !list) return;
+
+    const buttons = Array.from(toggle.querySelectorAll<HTMLButtonElement>(".view-btn"));
+    if (buttons.length === 0) return;
+
+    const saved = (localStorage.getItem("bitx_domain_list_view") ?? "list") as "list" | "grid";
+    const initialView: "list" | "grid" = saved === "grid" ? "grid" : "list";
+
+    this.applyDomainsView(initialView);
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const view = (btn.dataset.view as "list" | "grid") ?? "list";
+        this.applyDomainsView(view);
+        localStorage.setItem("bitx_domain_list_view", view);
+      });
+    });
+  }
+
+  private applyDomainsView(view: "list" | "grid"): void {
+    if (!this.domainsListElement) return;
+
+    this.domainsListElement.classList.toggle("view-list", view === "list");
+    this.domainsListElement.classList.toggle("view-grid", view === "grid");
+
+    const toggle = document.getElementById("domainsViewToggle");
+    toggle?.querySelectorAll<HTMLButtonElement>(".view-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.view === view);
+    });
+  }
+
+  private renderDomainsList(): void {
+    if (!this.domainsListElement) return;
+
+    const state = this.popupService.getState();
+    const sessions: any[] = Array.isArray(state.sessions) ? state.sessions : [];
+
+    const counts = new Map<string, number>();
+    for (const s of sessions) {
+      const d = typeof s?.domain === "string" ? s.domain.trim() : "";
+      if (!d) continue;
+      counts.set(d, (counts.get(d) ?? 0) + 1);
+    }
+
+    const domains = Array.from(counts.entries()).map(([domain, count]) => ({ domain, count }));
+
+    if (domains.length === 0) {
+      this.domainsListElement.innerHTML = '<div class="no-sessions">No domains saved yet</div>';
+      return;
+    }
+
+    const currentDomain = state.currentDomain;
+
+    domains.sort((a, b) => {
+      if (a.domain === currentDomain) return -1;
+      if (b.domain === currentDomain) return 1;
+      return a.domain.localeCompare(b.domain);
+    });
+
+    this.domainsListElement.innerHTML = "";
+
+    for (const item of domains) {
+      const row = document.createElement("div");
+      row.className = "domain-item";
+      if (item.domain === currentDomain) row.classList.add("active");
+
+      const title = document.createElement("div");
+      title.className = "domain-title";
+      title.textContent = item.domain;
+
+      const sessionsLine = document.createElement("div");
+      sessionsLine.className = "domain-sessions";
+      sessionsLine.textContent = `${item.count} session${item.count === 1 ? "" : "s"}`;
+
+      const activeLine = document.createElement("div");
+      activeLine.className = "domain-active";
+
+      const activeSessionId = (state.activeSessions as any)?.[item.domain];
+      const active = activeSessionId ? sessions.find((s) => s?.id === activeSessionId) : null;
+      const activeName = active?.name ? String(active.name) : "—";
+
+      activeLine.innerHTML = `<span class="domain-active-label">Active:</span> <span class="domain-active-name">${activeName}</span>`;
+
+      row.appendChild(title);
+      row.appendChild(sessionsLine);
+      row.appendChild(activeLine);
+
+      row.addEventListener("click", () => {
+        void this.openDomain(item.domain);
+      });
+
+      this.domainsListElement.appendChild(row);
+    }
+  }
+
+  private async openDomain(domain: string): Promise<void> {
+    try {
+      const url = domain.includes("://") ? domain : `https://${domain}`;
+      await chrome.tabs.create({ url });
+
+      // optional: setelah klik domain, balik ke tab sessions
+      this.setMainTab("sessions");
+      localStorage.setItem("bitx_main_tab", "sessions");
+    } catch (error) {
+      this.showError(handleError(error, "open domain"));
+    }
+  }
 
   constructor() {
     // Get DOM elements
@@ -99,6 +248,8 @@ class PopupController {
     this.setupSessionListHandlers();
     this.setupEventListeners();
     this.setupSessionViewToggle();
+    this.setupMainTabs();
+    this.setupDomainsViewToggle();
   }
 
   async initialize(): Promise<void> {
@@ -110,6 +261,7 @@ class PopupController {
 
       this.currentSiteElement.textContent = state.currentDomain;
       this.renderSessionsList();
+      this.renderDomainsList();
     } catch (error) {
       this.showError(handleError(error, "PopupController.initialize"));
     }
@@ -241,6 +393,7 @@ class PopupController {
   private renderSessionsList(): void {
     const state = this.popupService.getState();
     this.sessionList.render(state.sessions, state.activeSessions, state.currentDomain);
+    this.renderDomainsList();
   }
 
   private showError(message: string): void {
