@@ -1160,3 +1160,16 @@ button:disabled {
 .domain-active-name {
   color: #eceff4;
 }
+
+.modal-body a {
+  color: #cfe0ff;
+  background: rgba(137, 180, 250, 0.12);
+  border: 1px solid rgba(137, 180, 250, 0.28);
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 700;
+}
+.modal-body a:hover {
+  background: rgba(137, 180, 250, 0.18);
+}

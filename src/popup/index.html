@@ -27,10 +27,8 @@
             <span></span>
           </div>
 
-          <!-- DROPDOWN -->
           <div class="dropdown-menu" id="dropdownMenu">
             <div class="dropdown-item" data-action="export">Export/Import Sessions</div>
-            <!-- <div class="dropdown-item" data-action="import">Import Sessions</div> -->
             <div class="dropdown-item" data-action="clear">Clear All Sessions</div>
             <div class="dropdown-divider"></div>
             <div class="dropdown-item" data-action="help">Help</div>
@@ -40,13 +38,10 @@
       </header>
 
       <main class="content">
-        <!-- MAIN TABS -->
         <div class="main-tabs" id="mainTabs">
           <button class="main-tab active" data-main="sessions">Saved Sessions</button>
           <button class="main-tab" data-main="domains">Saved Domains</button>
         </div>
-
-        <!-- PANEL: SESSIONS -->
         <section class="main-panel active" data-main-panel="sessions">
           <div class="sessions-section">
             <div class="sessions-header">
@@ -63,8 +58,6 @@
             </div>
           </div>
         </section>
-
-        <!-- PANEL: DOMAINS -->
         <section class="main-panel" data-main-panel="domains">
           <div class="domains-section">
             <div class="sessions-header">
@@ -84,7 +77,6 @@
       </main>
     </div>
 
-    <!-- Modals -->
     <div id="saveModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -178,7 +170,6 @@
           <button id="closeTransferModal" class="close-btn">&times;</button>
         </div>
 
-        <!-- LEVEL 1: Local / Cloud -->
         <div class="modal-tabs">
           <button class="modal-tab active" data-tab="local">Local</button>
           <button class="modal-tab" data-tab="cloud">Cloud <span class="badge-new">NEW</span></button>
@@ -306,23 +297,34 @@
         </div>
 
         <div class="modal-body">
-          <p><strong>Version:</strong> 1.3.0</p>
-          <p><strong>Created by:</strong>fanesz, enhanced by GitmeRiz</p>
-          <p><strong>About BitX Sessions</strong></p>
-          <p style="opacity: 0.8">
+          <p><strong>Version:</strong> 2.0.0</p>
+          <p>
+            <strong>Developed by:</strong>
+            <a href="https://github.com/AnotherRiz/BitX-Sessions" target="_blank" rel="noopener noreferrer">GitmeRiz</a
+            >.
+            <strong>Based on:</strong>
+            <a href="https://github.com/fanesz/session-switcher" target="_blank" rel="noopener noreferrer">fanesz</a>
+          </p>
+          <p><strong>What is BitX Sessions?</strong></p>
+          <p style="opacity: 0.85">
             Effortlessly manage multiple accounts. Save login sessions and switch between them instantly, no logout, no
             hassle.
           </p>
 
           <hr style="margin: 10px 0; border: 1px solid #eee; opacity: 0.2" />
 
-          <p><strong>Features:</strong></p>
-          <ul style="margin-left: 16px; opacity: 0.9">
-            <li>Save & Switch sessions</li>
-            <li>Rename & Delete session</li>
-            <li>Drag & drop session order</li>
-            <li>Export/Import session JSON</li>
-          </ul>
+          <p><strong>Privacy</strong></p>
+          <p style="opacity: 0.85">
+            Your sessions are stored locally in your browser. Export/Import only happens when you manually use it.
+          </p>
+          <hr style="margin: 10px 0; border: 1px solid #eee; opacity: 0.2" />
+
+          <p style="opacity: 0.8">
+            <b>Feedback:</b>
+            <a href="https://github.com/AnotherRiz/BitX-Sessions/issues" target="_blank" rel="noopener noreferrer">
+              GitHub Issues
+            </a>
+          </p>
         </div>
 
         <div class="modal-footer">
